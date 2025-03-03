@@ -50,7 +50,7 @@
 
 
 ----------------
-|Additional Notes|
+Additional Notes
 ----------------
 
 ambiguous base notation:
