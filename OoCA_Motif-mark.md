@@ -47,3 +47,15 @@
 				2. Annotation start/end pos of exon/intron regions
 		6. Save file
 			1. Save as a png with correct naming convention
+
+
+----------------
+|Additional Notes|
+----------------
+
+ambiguous base notation:
+y = C or T
+r = A or G
+s = G or C
+w = A or T
+N = Any base (A,C,G,T)
