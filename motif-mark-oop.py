@@ -20,19 +20,35 @@ class FastaParser:
         '''
 
 class MotifBranch:
-    def __init__(self, sequence):
+    ambiguous_map: dict = {
+        'Y' : ['T', 'C'], # What we really care about but I made it general for all ambiguous base calls
+        'R' : ['A', 'G'],
+        'S' : ['G', 'C'],
+        'W' : ['A', 'T'],
+        'N' : ['A', 'T', 'G', 'C']
+    }
+    
+    def __init__(self, sequence = ''):
         '''
         A class to parse through the motif file and create individual motif objects
         '''
-        ambiguous_map: dict = {
-            'Y' : ['T', 'C'],
-            'R' : ['A', 'G'],
-            'S' : ['G', 'C'],
-            'W' : ['A', 'T'],
-            'N' : ['A', 'T', 'G', 'C']
-        }
+        self.sequence = sequence
+        self.children = []
+
+    def add_child(self, char):
+        possibilities = MotifBranch.ambiguous_map.get(char, [char])
+        for letter in possibilities: # create a new Motif branch object, iterate through T and C as a possibility
+            child = MotifBranch(self.sequence + letter)
+            self.children.append(child)
+
+        return self.children
+    
+    def expand_all():
+        
 
         
+
+
 
 
         self.sequence
