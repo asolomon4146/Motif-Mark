@@ -14,7 +14,7 @@ args = parser.parse_args()
 # Class initialization
 
 class FastaParser:
-    def __init__(self, ):
+    def __init__(self):
         '''
         Make a sliding window
         '''
@@ -43,34 +43,48 @@ class MotifBranch:
 
         return self.children
     
-    def expand_all():
+    def expand_all(self, motif_pattern):
+        if not motif_pattern:
+            return[self]
         
+        char = motif_pattern[0]
+        branches = self.add_child(char)
+        results = []
 
-        
+        for branch in branches:
+            results.extend(branch.expand_all(motif_pattern[1:]))
+        return results
+
+
+if __name__ == '__main__':
+    root = MotifBranch()
+    complete_branches = root.expand_all("AYYC")
+    expanded_motifs = [branch.sequence for branch in complete_branches]
+    print(expanded_motifs)
 
 
 
 
-        self.sequence
-        # Make a dictionary where 
-        motif_dict: dict = {}
-        motif_set: set = {}
-        motif_str: str = ""
-        with open(args.motif, 'r') as m_fh:
-            for i, line in enumerate(args.motif):
-                line = line.strip()
-                for char in line:
-                    if char == 'Y':
-                        # Make a copy of the previous motif_str
+        # self.sequence
+        # # Make a dictionary where 
+        # motif_dict: dict = {}
+        # motif_set: set = {}
+        # motif_str: str = ""
+        # with open(args.motif, 'r') as m_fh:
+        #     for i, line in enumerate(args.motif):
+        #         line = line.strip()
+        #         for char in line:
+        #             if char == 'Y':
+        #                 # Make a copy of the previous motif_str
                         
-                        # make a list or set or dict or something that holds all possible motifs for that line so I can makea  sliding window of that motif size to iterate over the file in the motif parser class.
-                        for j in range(1):
-                            motif_str += "C"
+        #                 # make a list or set or dict or something that holds all possible motifs for that line so I can makea  sliding window of that motif size to iterate over the file in the motif parser class.
+        #                 for j in range(1):
+        #                     motif_str += "C"
                             
                         
-                        motif_set
-                        if motif_dict[]
-                        motif_dict
+        #                 motif_set
+        #                 if motif_dict[]
+        #                 motif_dict
 
 
                     
