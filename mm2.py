@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import cairo
 
 # ----------------------------
 # Helper Functions for File Parsing
@@ -102,7 +103,79 @@ class FastaParser:
                     if seq[i:i + motif_length] in expanded_set:
                         results[seq_id][motif].append(i)
         return results
-        
+
+# ----------------------------
+# Visualization with pycairo
+# ----------------------------
+
+def visualize_motifs_cairo(seq_id, sequence, search_results, output_file):
+    """
+    Create a visualization of the sequence with motifs marked using pycairo.
+    - seq_id: identifier for the sequence.
+    - sequence: nucleotide sequence (str).
+    - search_results: dict mapping motif to a list of start indices.
+    - output_file: PNG filename to save.
+    """
+    # Constants for drawing
+    scale = 5  # pixels per base
+    margin = 20
+    seq_length = len(sequence)
+    width = seq_length * scale + 2 * margin
+    height = 150  # adjust as needed
+    
+    # Create a Cairo surface and context
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+    ctx = cairo.Context(surface)
+    
+    # Fill background with white
+    ctx.rectangle(0, 0, width, height)
+    ctx.set_source_rgb(1, 1, 1)
+    ctx.fill()
+    
+    # Draw the sequence as a horizontal line
+    y_line = height // 2
+    ctx.set_line_width(2)
+    ctx.set_source_rgb(0, 0, 0)
+    ctx.move_to(margin, y_line)
+    ctx.line_to(width - margin, y_line)
+    ctx.stroke()
+    
+    # Define a list of colors (in RGB, 0-1 scale) for different motifs
+    colors_list = [
+        (1, 0, 0),     # red
+        (0, 0, 1),     # blue
+        (0, 0.8, 0),   # green
+        (1, 0.5, 0),   # orange
+        (0.5, 0, 0.5)  # purple
+    ]
+    
+    # Draw motifs: for each motif, draw a rectangle at each occurrence
+    for idx, (motif, positions) in enumerate(search_results.items()):
+        color = colors_list[idx % len(colors_list)]
+        for pos in positions:
+            x = margin + pos * scale
+            rect_width = len(motif) * scale
+            # Vertical position: stagger motif markers above the line
+            rect_y = y_line - 30 - idx * 15
+            rect_height = 10
+            ctx.rectangle(x, rect_y, rect_width, rect_height)
+            ctx.set_source_rgb(*color)
+            ctx.fill()
+            
+            # Optionally, annotate with the motif text
+            ctx.set_source_rgb(0, 0, 0)
+            ctx.set_font_size(10)
+            ctx.move_to(x, rect_y - 2)
+            ctx.show_text(motif)
+    
+    # Add a title to the image
+    ctx.set_source_rgb(0, 0, 0)
+    ctx.set_font_size(14)
+    ctx.move_to(margin, margin)
+    ctx.show_text(f"Motif Occurrences in {seq_id}")
+    
+    # Save the image to a PNG file
+    surface.write_to_png(output_file)
 
 # ----------------------------
 # Main Script Execution
@@ -121,3 +194,10 @@ if __name__ == '__main__':
     fasta_parser = FastaParser(sequences, motifs)
     search_results = fasta_parser.search()
     print(search_results)
+
+    # Output file prefix: same as FASTA file prefix
+    output_prefix = args.fasta.rsplit('.', 1)[0]
+    for seq_id, result in search_results.items():
+        output_file = f"{output_prefix}_{seq_id}.png"
+        visualize_motifs_cairo(seq_id, sequences[seq_id], result, output_file)
+        print(f"Visualization saved to {output_file}")
