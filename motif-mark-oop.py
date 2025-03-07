@@ -58,7 +58,6 @@ class MotifBranch:
         if not pattern:
             return {self.seq}
         first = pattern[0]
-        # get options for ambiguous base or default to itself
         opts = MotifBranch.ambig_map.get(first, [first])
         expanded_results = set()
         for letter in opts:
@@ -72,8 +71,7 @@ def expand_motif(motif):
 # parser class that searches for motifs in sequences
 class FastaParser:
     def __init__(self, seqs, motifs):
-        """seqs: dict of {id: sequence} and motifs is list of motif strings (upper)
-        """
+        """seqs: dict of {id: sequence} and motifs is list of motif strings (upper)"""
         self.seqs = seqs
         self.motifs = motifs
         self.expanded = {}
@@ -99,17 +97,17 @@ class FastaParser:
                         gene_motif_occurrences[sid][motif].append(i)
         return gene_motif_occurrences
 
-# visualizer class to draw the genes and motifs (output is SVG so its scalable)
+# visualizer class to draw the genes and motifs (output is PNG so its a raster image)
 class MotifVisualizer:
-    def __init__(self, seqs, search_results, motifs, colors=None, scale=5, gene_height=100, gene_gap=20, margin=20):
+    def __init__(self, seqs, search_results, motifs, colors=None, scale=7, gene_height=150, gene_gap=30, margin=40):
         """
         seqs: dict of {id: sequence}
         search_results: dict {seq_id: {motif: [positions]}}
         motifs: list of original motif strings
         colors: list of RGB tuples (0-1) for motifs (if none, default colors used)
-        scale: pixels per base
-        gene_height: vertical space for gene drawing
-        gene_gap: extra gap between genes to prevent overlaps
+        scale: pixels per base (increased for better clarity)
+        gene_height: vertical space for gene drawing (increased)
+        gene_gap: extra gap between genes to prevent overlaps (increased)
         margin: margin in pixels
         """
         self.seqs = seqs
@@ -131,7 +129,7 @@ class MotifVisualizer:
         self.summary = {}
 
     def get_intervals(self, seq):
-        """returns list of (start, end, region) for a seq
+        """returns list of (start, end, region) for a seq;
         region is 'exon' if letter is uppercase, 'intron' if lowercase
         """
         intervals = []
@@ -168,8 +166,7 @@ class MotifVisualizer:
         return lane_assign
 
     def classify(self, seq, start, m_len):
-        """classify a motif occurrance as exon, intron or both
-        """
+        """classify a motif occurrance as exon, intron or both"""
         seg = seq[start:start+m_len]
         if all(ch.isupper() for ch in seg):
             return 'exon'
@@ -179,8 +176,7 @@ class MotifVisualizer:
             return 'both'
 
     def count_overlaps(self, positions):
-        """count overlapping occurrances (if diff <= 1) in a sorted list
-        """
+        """count overlapping occurrances (if diff <= 1) in a sorted list"""
         count = 0
         pos_sorted = sorted(positions)
         for i in range(len(pos_sorted)-1):
@@ -189,14 +185,15 @@ class MotifVisualizer:
         return count
 
     def draw(self, out_file):
-        """draw the genes with motifs to an SVG file
+        """draw the genes with motifs to a PNG file
         """
         width = self.max_len * self.scale + 2 * self.margin
         num_genes = len(self.seqs)
         spacing = self.gene_height + self.gene_gap
         height = num_genes * spacing + self.legend_height + self.margin
 
-        surface = cairo.SVGSurface(out_file, width, height)
+        # Create a PNG surface with FORMAT_ARGB32
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
         ctx = cairo.Context(surface)
 
         # fill background white
@@ -298,15 +295,13 @@ class MotifVisualizer:
             ctx.set_source_rgb(0, 0, 0)
             ctx.select_font_face("Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
             ctx.set_font_size(25)
-            # subtract 10 from y position
             gene_label_y = y_offset + gene_idx * spacing + 30 - 10
             ctx.move_to(self.margin, gene_label_y)
             ctx.show_text(sid)
 
             gene_idx += 1
 
-        # calculate legend position so it fills the bottom white space and is 10px from border
-        # using boxes 30x15 and key similar to motif legend
+        # draw legend at bottom so it fills available space and is 10px from bottom
         legend_box_w = 30
         legend_box_h = 15
         legend_y = height - self.margin - 10 - (legend_box_h + 20)  # 20 extra for key area
@@ -323,7 +318,7 @@ class MotifVisualizer:
             ctx.stroke()
             ctx.move_to(x_legend + legend_box_w + 5, legend_y + legend_box_h)
             ctx.show_text(motif)
-            x_legend += 150  # spacing between legend entries
+            x_legend += 150
 
         # draw key for gene structure (exon/intron)
         key_x = self.margin
@@ -346,12 +341,11 @@ class MotifVisualizer:
         ctx.move_to(key_x + legend_box_w + 5, key_y + legend_box_h)
         ctx.show_text("Intron")
 
-        surface.finish()
+        surface.write_to_png(out_file)
         print(f"visualization saved to {out_file}")
 
     def write_summary(self, summary_file):
-        """writes summary stats to a tsv file with columns: Gene, Motif, Total, Exon, Intron, Both, Overlap
-        """
+        """writes summary stats to a tsv file with columns: Gene, Motif, Total, Exon, Intron, Both, Overlap"""
         with open(summary_file, 'w') as fh:
             fh.write("Gene\tMotif\tTotal\tExon\tIntron\tBoth\tOverlap\n")
             for gene in self.summary:
@@ -374,9 +368,9 @@ if __name__ == '__main__':
     gene_motif_occurrences = parser_obj.search()
 
     output_prefix = args.fasta.rsplit('.', 1)[0]
-    out_svg = f"{output_prefix}.svg"
+    out_png = f"{output_prefix}.png"
     summary_file = f"{output_prefix}_summary.tsv"
 
     visualizer = MotifVisualizer(seqs, gene_motif_occurrences, motifs)
-    visualizer.draw(out_svg)
+    visualizer.draw(out_png)
     visualizer.write_summary(summary_file)
